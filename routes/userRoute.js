@@ -27,7 +27,7 @@ const sendVerificationEmail = async (email, token) => {
       from: process.env.EMAIL,
       to: email,
       subject: 'Verify your email',
-      html: `<p>Click <a href="https://backend-vo93.onrender.com/user/verify?token=${token}">here</a> to verify your email.</p>`,
+      html: `<p>Click <a href="https://gymworkoutback-1.onrender.com/user/verify?token=${token}">here</a> to verify your email.</p>`,
   };
 
   const info = await transporter.sendMail(mailOptions);
@@ -130,8 +130,6 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: "Login error" });
   }
 });
-
-
 
 // ✅ **Get User Profile**
 router.get("/profile/:userId", async (req, res) => {

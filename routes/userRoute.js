@@ -76,14 +76,6 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-async function logger(){
-  console.log("-------------------")
-  console.log(await WorkoutUser.find())
-  console.log("---------------")
-
-}
-
-logger()
 router.get('/verify', async (req, res) => {
   try {
     const { token } = req.query;

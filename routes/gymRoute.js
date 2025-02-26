@@ -33,16 +33,13 @@ router.post("/", async (req, res) => {
 router.get("/gyms/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log(req.params)
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID format" });
     }
 
     const gyms = await gymModel.find({ user: new mongoose.Types.ObjectId(userId) });
-
-    if (!gyms.length) {
-      return res.status(404).json({ message: "No workouts found" });
-    }
 
     res.status(200).json(gyms);
   } catch (error) {

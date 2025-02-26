@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors'; // Import CORS
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { connectDB } from "./config.js"; // ✅ Correct import
+import connectDB  from "./config.js"; // ✅ Correct import
 import userRoute from './routes/userRoute.js'
 import gymRoute from './routes/gymRoute.js'
 
@@ -35,7 +35,7 @@ app.get('/', (req, res) => {
 const startServer = async () => {
   try {
     await connectDB(); // Connect to MongoDB
-    const PORT = process.env.PORT || 5003;
+    const PORT = process.env.PORT || 5001;
 
     const server = app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);

@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
   },
   verificationToken: { 
     type: String, 
-    required: false // Not mandatory when creating a new user
+    required: false
   },
 });
 

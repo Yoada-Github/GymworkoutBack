@@ -2,16 +2,18 @@ import express from "express"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
-import nodemailer from "nodemailer"
-import WorkoutUser from "../models/userModel.js"
+import nodemailer from "nodemailer";
+import WorkoutUser from "../models/userModel.js";
+import dotenv from "dotenv";
+
+
 const router = express.Router();
 
-
+dotenv.config()
 // Function to generate a JWT token
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
 };
-
 const sendVerificationEmail = async (email, token) => {
   const transporter = nodemailer.createTransport({
       service: 'Gmail', 
@@ -19,9 +21,7 @@ const sendVerificationEmail = async (email, token) => {
           user: process.env.EMAIL, 
           pass: process.env.EMAIL_PASSWORD, 
       },
-  });
-
-  
+  }); 
 
   const mailOptions = {
       from: process.env.EMAIL,
@@ -30,91 +30,106 @@ const sendVerificationEmail = async (email, token) => {
       html: `<p>Click <a href="https://gymworkoutback-1.onrender.com/user/verify?token=${token}">here</a> to verify your email.</p>`,
   };
 
-  const info = await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+  } catch (error) {
+    console.error('Error sending email:', error);
+  }
 }
 
-
-// Signup Endpoint
+//sign up end point
 router.post('/signup', async (req, res) => {
   try {
+    
     const { username, email, password } = req.body;
+    console.log('Request body:', req.body);
 
-    // Validate required fields
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Check for existing user
     const existingUser = await WorkoutUser.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const token = jwt.sign({ username,email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    const  token = jwt.sign({ username, email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    const newUser = new User({
+    const newUser = new WorkoutUser({
       username, 
       email, 
       password: hashedPassword, 
-      verificationToken:token,
+      verificationToken: token,
       isEmailVerified: false,
-    })
-    await newUser.save()
+    });
 
-    await sendVerificationEmail(email,token);
+    await newUser.save();
+    await sendVerificationEmail(email, token);
+    console.log(newUser)
 
-    res.status(201).json({ message: 'User created successfully', token });
+    return res.status(201).json({ message: 'User created successfully. Please verify your email.', token });
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
-// **Email Verification Endpoint**
 
+async function logger(){
+  console.log("-------------------")
+  console.log(await WorkoutUser.find())
+  console.log("---------------")
+
+}
+
+logger()
 router.get('/verify', async (req, res) => {
   try {
     const { token } = req.query;
+    console.log("Received verification request with token:", token);
 
     if (!token) {
+      console.log("No token provided");
       return res.status(400).json({ message: 'Token is required' });
     }
 
-    // Find user by verification token
     const user = await WorkoutUser.findOne({ verificationToken: token });
+    console.log(user)
 
     if (!user) {
+      console.log("User not found for token:", token);
       return res.status(400).json({ message: 'Invalid or expired token' });
     }
-    user.set(
-      {
-        isEmailVerified: true,
-        verificationToken: "none"
-      }
-    )
-    
 
+    user.isEmailVerified = true;
+    user.verificationToken = "none"; // Clearing token after verification
     await user.save();
 
-    res.status(200).json({ message: 'Email successfully verified!' });
+    console.log("User verified successfully:", user);
+
+    res.redirect("http://backend-vo93.onrender.com/user/login"); 
   } catch (error) {
     console.error('Verification error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
-// ✅ **User Login (Only if Verified)**
+
+// **User Login (Only if Verified)**
 router.post("/login", async (req, res) => {
   try {
     const { username, email, password } = req.body;
     const user = await WorkoutUser.findOne({ email });
+    console.log("User found in DB:", user); 
 
     if (!user || user.username !== username) {
       return res.status(401).json({ error: "Invalid username or email" });
     }
+     
+    console.log("User email verified:", user.isEmailVerified); 
 
-    if (!user.isVerified) {
+    if (!user.isEmailVerified) {
       return res.status(403).json({ error: "Please verify your email first" });
     }
 
@@ -123,7 +138,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    const token = jwt.sign({ userId: user._id }, "your_secret_key", { expiresIn: "1h" });
+    const token = generateToken(user._id);
 
     res.json({ username: user.username, email: user.email, userId: user._id, token });
   } catch (error) {
@@ -131,10 +146,11 @@ router.post("/login", async (req, res) => {
   }
 });
 
+
 // ✅ **Get User Profile**
 router.get("/profile/:userId", async (req, res) => {
   try {
-    const user = await WorkoutUser.findById(req.params.userId).select("-password");
+    const user = await WorkoutUser.findById(req.params.userId).select("password");
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json(user);
   } catch (error) {

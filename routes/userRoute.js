@@ -76,6 +76,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+// email verification
 router.get('/verify', async (req, res) => {
   try {
     const { token } = req.query;

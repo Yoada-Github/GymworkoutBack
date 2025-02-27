@@ -109,7 +109,7 @@ router.get('/verify', async (req, res) => {
 });
 
 
-// **User Login (Only if Verified)**
+// User Login
 router.post("/login", async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -140,10 +140,10 @@ router.post("/login", async (req, res) => {
 });
 
 
-// ✅ **Get User Profile**
+//  Get User Profile (Fix: Include username and email)
 router.get("/profile/:userId", async (req, res) => {
   try {
-    const user = await WorkoutUser.findById(req.params.userId).select("password");
+    const user = await WorkoutUser.findById(req.params.userId).select("username email password"); // Add username and email
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json(user);
   } catch (error) {
@@ -151,7 +151,8 @@ router.get("/profile/:userId", async (req, res) => {
   }
 });
 
-// ✅ **Update Password**
+
+// Update Password
 router.put("/update/:userId", async (req, res) => {
   try {
     const { password } = req.body;
@@ -166,7 +167,7 @@ router.put("/update/:userId", async (req, res) => {
   }
 });
 
-// ✅ **Delete User Account**
+// Delete User Account
 router.delete("/delete/:userId", async (req, res) => {
   try {
     await WorkoutUser.findByIdAndDelete(req.params.userId);
